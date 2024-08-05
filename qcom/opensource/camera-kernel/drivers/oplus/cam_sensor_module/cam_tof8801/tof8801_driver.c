@@ -2866,7 +2866,7 @@ int tof_reset(void)
 
 }
 
-int tof_stop(void)
+int	tof_stop(void)
 {
 	struct tof_sensor_chip *chip;
 

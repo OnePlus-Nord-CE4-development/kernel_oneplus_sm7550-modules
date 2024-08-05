@@ -340,7 +340,6 @@ static int cam_ois_power_down(struct cam_ois_ctrl_t *o_ctrl)
 
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 	DeinitOIS(o_ctrl);
-	
 	if ((power_info->power_setting == NULL) &&
 		(power_info->power_down_setting == NULL))
 	{
@@ -854,6 +853,8 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 				if (rc < 0) {
 					CAM_ERR(CAM_OIS,
 					"fw init parsing failed: %d", rc);
+					cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
+					cam_mem_put_cpu_buf(dev_config.packet_handle);
 					return rc;
 				}
 			}
@@ -874,6 +875,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 				} else {
 					CAM_ERR(CAM_OIS, "ois type=%d,cam_ois_power_up failed",o_ctrl->ois_type);
 					mutex_unlock(&(o_ctrl->ois_power_down_mutex));
+					cam_mem_put_cpu_buf(dev_config.packet_handle);
 					return rc;
 				}
 			} else {
@@ -1139,7 +1141,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 
 		rc = cam_sensor_util_get_current_qtimer_ns(&qtime_ns);
 		if (rc < 0) {
-			CAM_ERR(CAM_OIS, "failed to get qtimer rc:%d");
+			CAM_ERR(CAM_SENSOR, "failed to get qtimer rc:%d");
 			cam_mem_put_cpu_buf(dev_config.packet_handle);
 			return rc;
 		}
@@ -1150,6 +1152,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else if(o_ctrl->ois_eis_function == 2) {
@@ -1157,6 +1160,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else if(o_ctrl->ois_eis_function == 3) {
@@ -1164,6 +1168,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else if(o_ctrl->ois_eis_function == 4) {
@@ -1171,6 +1176,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else if(o_ctrl->ois_eis_function == 5) {
@@ -1178,6 +1184,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else if(o_ctrl->ois_eis_function == 6) {
@@ -1185,6 +1192,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}else {
@@ -1194,6 +1202,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "cannot read data rc: %d", rc);
 				delete_request(&i2c_read_settings);
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 		}
@@ -1240,11 +1249,13 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		}
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 		if(o_ctrl->ois_eis_function == 1 || o_ctrl->ois_eis_function == 5) {
+			cam_mem_put_cpu_buf(dev_config.packet_handle);
 			return 0;
 		}else if(o_ctrl->ois_eis_function == 2 || o_ctrl->ois_eis_function == 4) {
 			rc = WRITE_QTIMER_TO_OIS(o_ctrl);
 			if (rc < 0) {
 				CAM_ERR(CAM_OIS, "Cannot update time");
+				cam_mem_put_cpu_buf(dev_config.packet_handle);
 				return rc;
 			}
 			break;

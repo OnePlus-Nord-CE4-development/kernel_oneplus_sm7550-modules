@@ -146,9 +146,9 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 				memptr += emap[j].mem.valid_size;
 			}
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
-        	}
-        	
-        	if (e_ctrl->actuator_ois_eeprom_merge_flag)
+		}
+
+		if (e_ctrl->actuator_ois_eeprom_merge_flag)
 		{
 			mutex_unlock(e_ctrl->actuator_ois_eeprom_merge_mutex);
 		}

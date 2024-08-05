@@ -3765,6 +3765,9 @@ static int cam_tfe_csid_evt_bottom_half_handler(
 		csid_hw->fatal_err_detected = true;
 		break;
 	case CAM_ISP_HW_ERROR_CSID_OUTPUT_FIFO_OVERFLOW:
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	case CAM_ISP_HW_ERROR_CSID_PKT_PAYLOAD_CORRUPTED:
+#endif
 		event_info.event_data = (void *)&err_evt_info;
 		rc = csid_hw->event_cb(csid_hw->event_cb_priv,
 			CAM_ISP_HW_EVENT_ERROR, (void *)&event_info);
@@ -3959,8 +3962,15 @@ irqreturn_t cam_tfe_csid_irq(int irq_num, void *data)
 			csid_hw->error_irq_count++;
 
 		if (irq_status[TFE_CSID_IRQ_REG_RX] &
-			TFE_CSID_CSI2_RX_ERROR_CRC)
+			TFE_CSID_CSI2_RX_ERROR_CRC) {
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+			csid_hw->error_irq_count++;
+			CAM_INFO_RATE_LIMIT(CAM_ISP, "CSID:%d, Long pkt payload CRC mismatch, error count:%d",
+				csid_hw->hw_intf->hw_idx, csid_hw->error_irq_count);
+#else
 			is_error_irq = true;
+#endif
+		}
 
 		if (irq_status[TFE_CSID_IRQ_REG_RX] &
 			TFE_CSID_CSI2_RX_ERROR_ECC)
@@ -3993,6 +4003,12 @@ handle_fatal_error:
 			csid_reg->csi2_reg->csid_csi2_rx_irq_mask_addr);
 
 		report_err_type = CAM_ISP_HW_ERROR_CSID_FATAL;
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+		if (irq_status[TFE_CSID_IRQ_REG_RX] & TFE_CSID_CSI2_RX_ERROR_CRC) {
+			report_err_type = CAM_ISP_HW_ERROR_CSID_PKT_PAYLOAD_CORRUPTED;
+			CAM_ERR(CAM_ISP, "CSID:%d, report_err_type:%d", csid_hw->hw_intf->hw_idx, report_err_type);
+		}
+#endif
 		cam_tfe_csid_handle_hw_err_irq(csid_hw,
 			report_err_type, irq_status);
 	}

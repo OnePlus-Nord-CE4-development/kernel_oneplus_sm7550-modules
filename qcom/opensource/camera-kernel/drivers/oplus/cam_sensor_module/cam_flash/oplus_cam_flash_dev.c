@@ -50,7 +50,6 @@ static ssize_t flash_on_off(struct cam_flash_ctrl *flash_ctrl)
 			flash_data.led_current_ma[0] = 110;
 			flash_data.led_current_ma[1] = 110;
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
-			/*Add by Fangyan @ Camera.Drv 2020/08/18 for different flash current mode*/
 			if (vendor_flash_ctrl->flash_current != 0)
 			{
 				flash_data.led_current_ma[0] = vendor_flash_ctrl->flash_current;

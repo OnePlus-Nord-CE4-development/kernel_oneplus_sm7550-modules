@@ -1282,7 +1282,7 @@ int WriteOisGyroGianToRam(struct cam_ois_ctrl_t *o_ctrl,DUAL_OIS_CALI_RESULTS* c
 		case 1 :
 			RamRead32A(0x87D8, & LsGyroX );
 			RamRead32A(0x8810, & LsGyroY );
-			CAM_INFO(CAM_OIS, "before write ls_gyro_gain_x = 0x%x ls_gyro_gain_y = 0x%x ,%lu ,%lu",
+			CAM_INFO(CAM_OIS, "before write ls_gyro_gain_x = 0x%x ls_gyro_gain_y = 0x%x ,%u ,%u",
 				LsGyroX,
 				LsGyroY,
 				LsGyroX,
@@ -1293,7 +1293,7 @@ int WriteOisGyroGianToRam(struct cam_ois_ctrl_t *o_ctrl,DUAL_OIS_CALI_RESULTS* c
 
 			RamRead32A(0x87D8, & LsGyroX );
 			RamRead32A(0x8810, & LsGyroY );
-			CAM_INFO(CAM_OIS, "after write ls_gyro_gain_x = 0x%x ls_gyro_gain_y = 0x%x ,%lu ,%lu",
+			CAM_INFO(CAM_OIS, "after write ls_gyro_gain_x = 0x%x ls_gyro_gain_y = 0x%x ,%u ,%u",
 				LsGyroX,
 				LsGyroY,
 				LsGyroX,
@@ -1380,7 +1380,7 @@ int QueryDualOisSmaWireStatus(struct cam_ois_ctrl_t *o_ctrl, uint32_t *sma_wire_
 	}
 
 	RamRead32A(0xF121, sma_wire_broken );
-	CAM_INFO(CAM_OIS, "QueryDualOisSmaWireStatus sma_wire_broken: %lu", sma_wire_broken);
+	CAM_INFO(CAM_OIS, "QueryDualOisSmaWireStatus sma_wire_broken: %lu", (uint32_t)(*((uint32_t *)sma_wire_broken)));
 	return rc;
 }
 
@@ -4961,7 +4961,7 @@ int32_t oplus_cam_ois_lock(struct v4l2_subdev *sd)
 					o_ctrl->ois_print_hall_data_thread = kthread_run(dump_ois_hall_data, o_ctrl, o_ctrl->ois_name);
 					if (IS_ERR(o_ctrl->ois_print_hall_data_thread))
 					{
-						CAM_ERR(CAM_OIS, "SDS create ois_print_hall_data_thread failed: %d", o_ctrl->ois_print_hall_data_thread);
+						CAM_ERR(CAM_OIS, "SDS create ois_print_hall_data_thread failed: %p", o_ctrl->ois_print_hall_data_thread);
 						o_ctrl->ois_print_hall_data_thread = NULL;
 					}
 				}

@@ -2285,7 +2285,7 @@ int32_t cam_cci_control_interface(void* control)
 
 	int32_t rc = 0,exp_byte;
 	struct v4l2_subdev *sd = cam_cci_get_subdev(CCI_DEVICE_1);
-	#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
 	if (NULL != sd)
 	{
 #endif
@@ -2342,7 +2342,7 @@ int32_t cam_cci_control_interface(void* control)
 		//	cci_ctrl_interface.cmd = MSM_CCI_I2C_WRITE_SYNC_BLOCK;
 			cci_ctrl_interface.cmd = MSM_CCI_I2C_WRITE;
 		//pack write data
-		cam_cci_write_packet(&cci_ctrl_interface,
+			cam_cci_write_packet(&cci_ctrl_interface,
 				pControl->addr,
 				pControl->data,
 				pControl->count);
@@ -2368,7 +2368,6 @@ int32_t cam_cci_control_interface(void* control)
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 	}
 #endif
-
 	cci_ctrl_interface.status = rc;
 	return rc;
 }

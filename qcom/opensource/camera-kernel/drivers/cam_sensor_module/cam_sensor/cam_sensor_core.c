@@ -2043,12 +2043,12 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	case CAM_OEM_GET_ID :
 	case CAM_OEM_IO_CMD :
 	case CAM_GET_DPC_DATA: {
-		rc = post_cam_sensor_driver_cmd(s_ctrl, arg);
-		if (rc < 0) {
-			CAM_ERR(CAM_SENSOR, "oplus cmd failed");
-			goto release_mutex;
+			rc = post_cam_sensor_driver_cmd(s_ctrl, arg);
+			if (rc < 0) {
+				CAM_ERR(CAM_SENSOR, "oplus cmd failed");
+				goto release_mutex;
+			}
 		}
-	}
 		break;
 #endif
 	default:
