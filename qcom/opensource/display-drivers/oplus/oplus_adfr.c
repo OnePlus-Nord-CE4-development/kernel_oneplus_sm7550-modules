@@ -1644,8 +1644,7 @@ int oplus_adfr_sa_handle(void *sde_encoder_virt)
 	}
 
 	/* auto mode, fakeframe and min fps are available only after power on */
-	if ((display->panel->power_mode != SDE_MODE_DPMS_ON)
-			|| (oplus_last_backlight == 0 || oplus_last_backlight == 1)) {
+	if (display->panel->power_mode != SDE_MODE_DPMS_ON) {
 		ADFR_DEBUG("should not handle sa when power mode is %u\n", display->panel->power_mode);
 		return 0;
 	}
@@ -5265,7 +5264,8 @@ int oplus_adfr_high_precision_handle(void *sde_enc_v)
 	}
 
 	/* oa high precision fps is available only after power on */
-	if (display->panel->power_mode != SDE_MODE_DPMS_ON) {
+	if ((display->panel->power_mode != SDE_MODE_DPMS_ON)
+			|| (oplus_last_backlight == 0 || oplus_last_backlight == 1)) {
 		ADFR_DEBUG("should not handle high precision mode when power mode is %u\n", display->panel->power_mode);
 		return -EFAULT;
 	}

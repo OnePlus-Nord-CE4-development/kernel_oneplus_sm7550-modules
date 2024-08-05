@@ -327,6 +327,14 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 	DSI_DEBUG("bl_scale = %u, bl_scale_sv = %u, bl_lvl = %u\n",
 		bl_scale, bl_scale_sv, (u32)bl_temp);
 
+#ifdef OPLUS_BUG_STABILITY
+	if (panel->oplus_priv.gamma_switch_enable && !strcmp(panel->name,"AC166 P 3 A0013 video mode dsi panel")) {
+		rc = oplus_display_panel_switch_gamma_mode(panel, bl_lvl);
+		if (rc)
+			DSI_ERR("failed to switch gamma mode\n");
+	}
+#endif /* OPLUS_BUG_STABILITY */
+
 	rc = dsi_panel_set_backlight(panel, (u32)bl_temp);
 	if (rc)
 		DSI_ERR("unable to set backlight\n");
@@ -916,8 +924,11 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
 	flags = DSI_CTRL_CMD_READ;
 
 	for (i = 0; i < count; ++i) {
-		memset(config->status_buf, 0x0, SZ_4K);
+#ifdef OPLUS_FEATURE_DISPLAY
+		oplus_panel_esd_set_page(panel, i);
+#endif /* OPLUS_FEATURE_DISPLAY */
 
+		memset(config->status_buf, 0x0, SZ_4K);
 		if (config->status_cmd.state == DSI_CMD_SET_STATE_LP)
 			cmds[i].msg.flags |= MIPI_DSI_MSG_USE_LPM;
 
@@ -961,6 +972,10 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
 #if defined(CONFIG_PXLW_IRIS)
 		}
 #endif
+
+#ifdef OPLUS_FEATURE_DISPLAY
+		oplus_panel_esd_set_page(panel, 0);
+#endif /* OPLUS_FEATURE_DISPLAY */
 	}
 
 #if defined(CONFIG_PXLW_IRIS)
@@ -8257,10 +8272,12 @@ int dsi_display_set_mode(struct dsi_display *display,
 	}
 
 #ifdef OPLUS_FEATURE_DISPLAY_ADFR
-	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d, h_skew=%d, clk_rate=%llu\n",
+	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d, h_skew=%d, clk_rate=%llu, h_sync_width=%d,\
+				h_front_porch%d, h_back_porch=%d, v_back_porch=%d, v_sync_width=%d, v_front_porch=%d\n",
 			adj_mode.priv_info->mdp_transfer_time_us,
 			timing.h_active, timing.v_active, timing.refresh_rate, timing.h_skew,
-			adj_mode.priv_info->clk_rate_hz);
+			adj_mode.priv_info->clk_rate_hz, timing.h_sync_width, timing.h_front_porch,
+			timing.h_back_porch, timing.v_back_porch, timing.h_sync_width, timing.v_front_porch);
 #else
 	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d, clk_rate=%llu\n",
 			adj_mode.priv_info->mdp_transfer_time_us,
@@ -9207,6 +9224,8 @@ int dsi_display_enable(struct dsi_display *display)
 		}
 #ifdef OPLUS_FEATURE_DISPLAY
 		oplus_display_update_current_display();
+		/* vedio mode first screen fps code download */
+		oplus_panel_switch_vid_mode(display, mode);
 #endif /* OPLUS_FEATURE_DISPLAY */
 #ifdef OPLUS_FEATURE_DISPLAY_ADFR
 		oplus_adfr_need_resend_osync_cmd(display, true);

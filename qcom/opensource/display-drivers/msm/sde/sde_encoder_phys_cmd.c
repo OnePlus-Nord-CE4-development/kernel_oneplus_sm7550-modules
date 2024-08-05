@@ -1095,6 +1095,7 @@ static int _get_tearcheck_threshold(struct sde_encoder_phys *phys_enc)
 
 	sde_enc = to_sde_encoder_virt(phys_enc->parent);
 	info = &sde_enc->mode_info;
+
 	mode = &phys_enc->cached_mode;
 	qsync_mode = sde_connector_get_qsync_mode(conn);
 	threshold_lines = adjusted_threshold_lines = DEFAULT_TEARCHECK_SYNC_THRESH_START;
@@ -1188,6 +1189,7 @@ static int _get_tearcheck_threshold(struct sde_encoder_phys *phys_enc)
 		SDE_EVT32(qsync_mode, qsync_min_fps, default_fps, info->jitter_numer,
 				info->jitter_denom, yres, extra_time_ns, default_line_time_ns,
 				adjusted_threshold_lines);
+
 	}
 
 exit:
@@ -1702,7 +1704,6 @@ static bool _sde_encoder_phys_cmd_needs_vsync_change(
 	cmd_enc = to_sde_encoder_phys_cmd(phys_enc);
 	sde_enc = to_sde_encoder_virt(phys_enc->parent);
 	info = &sde_enc->mode_info;
-
 	sde_encoder_helper_get_jitter_bounds_ns(info->frame_rate, info->jitter_numer,
 			info->jitter_denom, &l_bound, &u_bound);
 	if (!l_bound || !u_bound) {
@@ -1892,6 +1893,9 @@ static int _sde_encoder_phys_cmd_handle_wr_ptr_timeout(
 		SDE_ERROR_CMDENC(cmd_enc,
 			"wr_ptr_irq wait failed, switch_te:%d\n", switch_te);
 		SDE_EVT32(DRMID(phys_enc->parent), switch_te, SDE_EVTLOG_ERROR);
+#ifdef OPLUS_FEATURE_DISPLAY
+		SDE_ERROR("DisplayDriverID@@418$$wr_ptr_irq timeout failed, switch_te=%d\n", switch_te);
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 		if (sde_encoder_phys_cmd_is_master(phys_enc) &&
 			atomic_add_unless(

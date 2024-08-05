@@ -26,6 +26,7 @@ static u32 pwm_switch_cmd_restore = 0;
 static u32 pwm_switch_next_cmdq = 0;
 static int backlight_onepulse_normal_buf[];
 static int backlight_onepulse_max_buf[];
+extern bool is_evt_panel;
 ktime_t aod_off_te_timestamp;
 ktime_t lhbm_off_te_timestamp;
 

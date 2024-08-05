@@ -1011,7 +1011,7 @@ void iris_hangup_timeout_cnt_update_i7p(bool enable)
 	if (!payload)
 		return;
 	cmd[0] = IRIS_PWIL_ADDR + PWIL_HANGUP_TIMEOUT_CNT;
-		cmd[2] = IRIS_PWIL_ADDR + PWIL_IDLE_MASK;
+	cmd[2] = IRIS_PWIL_ADDR + PWIL_IDLE_MASK;
 	if (enable) {
 		cmd[1] = payload[0];
 		cmd[3] = 0x147;

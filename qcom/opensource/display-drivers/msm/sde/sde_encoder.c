@@ -3851,6 +3851,8 @@ static void sde_encoder_underrun_callback(struct drm_encoder *drm_enc,
 	SDE_ATRACE_END("encoder_underrun_callback");
 
 #ifdef OPLUS_FEATURE_DISPLAY
+	SDE_ERROR("DisplayDriverID@@422$$sde encoder underrun callback! Count=%d",
+			atomic_read(&phy_enc->underrun_cnt));
 	if (get_eng_version() == AGING) {
 		SDE_DBG_DUMP(SDE_DBG_BUILT_IN_ALL, "panic");
 	}
@@ -5098,9 +5100,9 @@ int oplus_sync_panel_brightness(enum oplus_sync_method method, struct drm_encode
 			usleep_range(delay, delay + 100);
 		}
 
-		if ((ktime_to_us(ktime_sub(ktime_get(), last_te_timestamp)) % display->panel->last_us_per_frame) > (display->panel->last_us_per_frame - DEBOUNCE_TIME)) {
-			SDE_EVT32(display->panel->last_us_per_frame, last_te_timestamp);
-			usleep_range(DEBOUNCE_TIME + display->panel->last_vsync_width, DEBOUNCE_TIME + 100 + display->panel->last_vsync_width);
+		if ((ktime_to_us(ktime_sub(ktime_get(), last_te_timestamp)) % us_per_frame) > (us_per_frame - DEBOUNCE_TIME)) {
+			SDE_EVT32(us_per_frame, last_te_timestamp);
+			usleep_range(DEBOUNCE_TIME + vsync_width, DEBOUNCE_TIME + 100 + vsync_width);
 		}
 		if (method == OPLUS_PREPARE_KICKOFF_METHOD) {
 			rc = oplus_setbacklight_by_display_type(drm_enc);
@@ -5138,6 +5140,65 @@ int oplus_set_brightness(struct backlight_device *bd,
 	mutex_unlock(&bd->ops_lock);
 
 	return rc;
+}
+
+int oplus_apollo_delay_for_ts_rsc(struct drm_encoder *drm_enc)
+{
+	struct sde_encoder_virt *sde_enc = NULL;
+	struct sde_encoder_phys_cmd *cmd_enc = NULL;
+	struct dsi_display *display = NULL;
+	struct sde_encoder_phys *phys_encoder = NULL;
+	struct sde_connector *c_conn = NULL;
+	s64 delay;
+	ktime_t last_te_timestamp;
+	struct sde_encoder_phys_cmd_te_timestamp *te_timestamp_list;
+
+	sde_enc = to_sde_encoder_virt(drm_enc);
+	phys_encoder = sde_enc->phys_encs[0];
+	if (phys_encoder == NULL)
+		return -EFAULT;
+	if (phys_encoder->connector == NULL)
+		return -EFAULT;
+	cmd_enc = to_sde_encoder_phys_cmd(phys_encoder);
+	if (cmd_enc == NULL) {
+		return -EFAULT;
+	}
+
+	c_conn = to_sde_connector(phys_encoder->connector);
+	if (c_conn == NULL)
+		return -EFAULT;
+
+	if (c_conn->connector_type != DRM_MODE_CONNECTOR_DSI)
+		return 0;
+
+	if (!c_conn->bl_need_sync) {
+		return 0;
+	}
+	display = c_conn->display;
+
+	te_timestamp_list = list_last_entry(&cmd_enc->te_timestamp_list, struct sde_encoder_phys_cmd_te_timestamp, list);
+	if (te_timestamp_list == NULL) {
+		return 0;
+	}
+	last_te_timestamp = te_timestamp_list->timestamp;
+
+	if (!display->panel) {
+		return 0;
+	}
+
+	if (display->panel->work_frame == 1 &&
+		(last_te_timestamp > display->panel->ts_timestamp) &&
+		(ktime_to_us(last_te_timestamp - display->panel->ts_timestamp) / display->panel->last_us_per_frame < 2) &&
+		(ktime_to_us(ktime_get() - display->panel->ts_timestamp) < 2*display->panel->last_us_per_frame)) {
+		SDE_ATRACE_BEGIN("delay_one_frame");
+		delay = display->panel->last_us_per_frame - ktime_to_us(ktime_sub(ktime_get(), last_te_timestamp));
+		if (delay > 0) {
+			usleep_range(delay+1000, delay + 1100);
+		}
+		SDE_ATRACE_END("delay_one_frame");
+	}
+
+	return 0;
 }
 
 int oplus_sync_panel_brightness_v2(struct drm_encoder *drm_enc)
@@ -5186,6 +5247,9 @@ int oplus_sync_panel_brightness_v2(struct drm_encoder *drm_enc)
 		return -EFAULT;
 	}
 
+	//delay when timing switch for RSC.
+	oplus_apollo_delay_for_ts_rsc(drm_enc);
+
 	us_per_frame = get_current_vsync_period(sde_enc->cur_master->connector);
 	vsync_width = get_current_vsync_width(sde_enc->cur_master->connector);
 	refresh_rate = get_current_refresh_rate(sde_enc->cur_master->connector);
@@ -5204,16 +5268,16 @@ int oplus_sync_panel_brightness_v2(struct drm_encoder *drm_enc)
 			display->panel->work_frame = 0;	// one frame work
 		}
 	}
-	
+
 	if (te_timestamp == NULL) {
 		return rc;
 	}
-	
+
 	last_te_timestamp = te_timestamp->timestamp;
 	sync_backlight = c_conn->bl_need_sync;
 	display->panel->oplus_priv.need_sync = sync_backlight;
 	c_conn->bl_need_sync = false;
-	
+
 	//in debounce time, update last_vsync_width from next frame
 	if (((last_te_timestamp > display->panel->ts_timestamp && display->panel->work_frame == 1) || display->panel->work_frame == 0) &&
 		(ktime_to_us(ktime_sub(ktime_get(), last_te_timestamp)) % display->panel->last_us_per_frame) > (display->panel->last_us_per_frame - DEBOUNCE_TIME)) {

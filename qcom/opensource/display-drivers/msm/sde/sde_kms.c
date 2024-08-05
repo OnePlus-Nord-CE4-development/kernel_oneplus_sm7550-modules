@@ -1056,8 +1056,8 @@ static void _sde_kms_drm_check_dpms(struct drm_atomic_state *old_state,
 			notification.panel = c_conn->panel;
 			notification.notif_data.old_fps = old_fps;
 			notification.notif_data.new_fps = new_fps;
-			notification.notif_data.early_trigger = is_pre_commit;
 
+			notification.notif_data.early_trigger = is_pre_commit;
 			panel_event_notification_trigger(panel_type,
 					&notification);
 
@@ -1287,6 +1287,9 @@ static void sde_kms_prepare_commit(struct msm_kms *kms,
 	rc = pm_runtime_resume_and_get(sde_kms->dev->dev);
 	if (rc < 0) {
 		SDE_ERROR("failed to enable power resources %d\n", rc);
+#ifdef OPLUS_FEATURE_DISPLAY
+		SDE_ERROR("DisplayDriverID@@407$$failed to enable power resources %d\n", rc);
+#endif /* OPLUS_FEATURE_DISPLAY */
 		SDE_EVT32(rc, SDE_EVTLOG_ERROR);
 		goto end;
 	}

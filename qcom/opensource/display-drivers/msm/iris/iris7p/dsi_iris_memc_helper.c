@@ -2299,7 +2299,7 @@ retry:
 
 static void _iris_scl_mv_strategy(uint32_t strategy)
 {
-		IRIS_LOGI("%s(), set: %u", __func__, strategy);
+	IRIS_LOGI("%s(), set: %u", __func__, strategy);
 
 	if (strategy < 10) {
 		iris_force_memc_strategy = false;
@@ -2616,8 +2616,8 @@ static void _iris_scl_change_model_proc(uint32_t cnn_model)
 	iris_cnn_using_model = cnn_model;
 
 	if ((cnn_model == iris_cnn_loaded_models[CNN_DMA_BUF_LEFT] ||
-			cnn_model == iris_cnn_loaded_models[CNN_DMA_BUF_RIGHT]) &&
-				cnn_model != _iris_scl_cnn_model_count() - 1) {
+				cnn_model == iris_cnn_loaded_models[CNN_DMA_BUF_RIGHT]) &&
+			cnn_model != _iris_scl_cnn_model_count() - 1) {
 		_iris_scl_triger_dma(dma_event_channels);
 		SDE_ATRACE_END(__func__);
 
@@ -3106,7 +3106,7 @@ static void _iris_ioinc_group_filter(uint32_t count, uint32_t *values)
 		ip_soft = IOINC1D_LUT_9TAP;
 		ip_sharp = IOINC1D_LUT_SHARP_9TAP;
 	}
-	
+
 	if (tap == IOINC_TAG5) {
 		IRIS_LOGI("%s(), current filter: [%u, %u], set: [%u, %u]", __func__,
 				iris_ioinc_filter[FILTER_SOFT], iris_ioinc_filter[FILTER_SHARP],
