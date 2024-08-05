@@ -34,11 +34,11 @@ KBUILD_OPTIONS += \
     DYNAMIC_SINGLE_CHIP=kiwi_v2 \
     MODNAME=qca_cld3_kiwi_v2 \
     DEVNAME=kiwi_v2 \
-    BOARD_PLATFORM=kalama \
+    BOARD_PLATFORM=crow \
     WLAN_CTRL_NAME=wlan
 endif
 
-KBUILD_OPTIONS += KBUILD_EXTRA_SYMBOLS=$(OUT_DIR)/../sm8550-modules/qcom/opensource/wlan/platform/Module.symvers
+KBUILD_OPTIONS += KBUILD_EXTRA_SYMBOLS=$(OUT_DIR)/../sm7550-modules/qcom/opensource/wlan/platform/Module.symvers
 
 all:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) modules $(KBUILD_OPTIONS)
