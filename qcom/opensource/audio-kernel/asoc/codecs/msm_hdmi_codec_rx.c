@@ -32,9 +32,9 @@
 	codec_info.stream_id = codec_data->stream[dai_id]; \
 
 enum {
-	DP_CONTROLLER0 = 0,
-	HDMI_CONTROLLER,
-	DP_CONTROLLER_MAX,
+        DP_CONTROLLER0 = 0,
+		HDMI_CONTROLLER,
+        DP_CONTROLLER_MAX,
 };
 
 enum {
@@ -509,7 +509,6 @@ static const struct snd_kcontrol_new msm_ext_disp_codec_rx_controls[] = {
 			SND_SOC_NOPM, HDMI_DAI, DP_STREAM_MAX - 1, 0, 2,
 			msm_ext_disp_audio_device_get,
 			msm_ext_disp_audio_device_set),
-
 };
 
 static int msm_ext_disp_audio_codec_rx_dai_startup(
