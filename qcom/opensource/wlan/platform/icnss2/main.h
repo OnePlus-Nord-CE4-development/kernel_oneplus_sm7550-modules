@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2020, 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef __MAIN_H__
@@ -19,6 +19,9 @@
 #include "icnss2.h"
 #else
 #include <soc/qcom/icnss2.h>
+#endif
+#if IS_ENABLED(CONFIG_INTERCONNECT)
+#include <linux/interconnect.h>
 #endif
 #include "wlan_firmware_service_v01.h"
 #include "cnss_prealloc.h"
@@ -53,6 +56,50 @@ struct icnss_control_params {
 	unsigned int bdf_type;
 };
 
+#if IS_ENABLED(CONFIG_INTERCONNECT)
+/**
+ * struct icnss_bus_bw_cfg - Interconnect vote data
+ * @avg_bw: Vote for average bandwidth
+ * @peak_bw: Vote for peak bandwidth
+ */
+struct icnss_bus_bw_cfg {
+	u32 avg_bw;
+	u32 peak_bw;
+};
+
+/* Number of bw votes (avg, peak) entries that ICC requires */
+#define ICNSS_ICC_VOTE_MAX 2
+
+/**
+ * struct icnss_bus_bw_info - Bus bandwidth config for interconnect path
+ * @list: Kernel linked list
+ * @icc_name: Name of interconnect path as defined in Device tree
+ * @icc_path: Interconnect path data structure
+ * @cfg_table: Interconnect vote data for average and peak bandwidth
+ */
+struct icnss_bus_bw_info {
+	struct list_head list;
+	const char *icc_name;
+	struct icc_path *icc_path;
+	struct icnss_bus_bw_cfg *cfg_table;
+};
+
+/**
+ * struct icnss_interconnect_cfg - ICNSS platform interconnect config
+ * @list_head: List of interconnect path bandwidth configs
+ * @path_count: Count of interconnect path configured in device tree
+ * @current_bw_vote: WLAN driver provided bandwidth vote
+ * @bus_bw_cfg_count: Number of bandwidth configs for voting. It is the array
+ * size of struct icnss_bus_bw_info.cfg_table
+ */
+struct icnss_interconnect_cfg {
+	struct list_head list_head;
+	u32 path_count;
+	int current_bw_vote;
+	u32 bus_bw_cfg_count;
+};
+#endif
+
 enum icnss_driver_event_type {
 	ICNSS_DRIVER_EVENT_SERVER_ARRIVE,
 	ICNSS_DRIVER_EVENT_SERVER_EXIT,
@@ -68,6 +115,8 @@ enum icnss_driver_event_type {
 	ICNSS_DRIVER_EVENT_QDSS_TRACE_SAVE,
 	ICNSS_DRIVER_EVENT_QDSS_TRACE_FREE,
 	ICNSS_DRIVER_EVENT_M3_DUMP_UPLOAD_REQ,
+	ICNSS_DRIVER_EVENT_IMS_WFC_CALL_IND,
+	ICNSS_DRIVER_EVENT_WLFW_TWT_CFG_IND,
 	ICNSS_DRIVER_EVENT_QDSS_TRACE_REQ_DATA,
 	ICNSS_DRIVER_EVENT_SUBSYS_RESTART_LEVEL,
 	ICNSS_DRIVER_EVENT_MAX,
@@ -127,6 +176,7 @@ enum icnss_driver_state {
 	ICNSS_MODE_ON,
 	ICNSS_BLOCK_SHUTDOWN,
 	ICNSS_PDR,
+	ICNSS_IMS_CONNECTED,
 	ICNSS_DEL_SERVER,
 	ICNSS_COLD_BOOT_CAL,
 	ICNSS_QMI_DMS_CONNECTED,
@@ -402,10 +452,15 @@ struct icnss_priv {
 	size_t smmu_iova_ipa_len;
 	struct qmi_handle qmi;
 	struct qmi_handle qmi_dms;
+	struct qmi_handle ims_qmi;
+	struct qmi_txn ims_async_txn;
 	struct list_head event_list;
 	struct list_head soc_wake_msg_list;
 	spinlock_t event_lock;
 	spinlock_t soc_wake_msg_lock;
+	#if IS_ENABLED(CONFIG_INTERCONNECT)
+	struct icnss_interconnect_cfg icc;
+	#endif
 	struct work_struct event_work;
 	struct work_struct fw_recv_msg_work;
 	struct work_struct soc_wake_msg_work;
@@ -428,12 +483,14 @@ struct icnss_priv {
 	uint32_t nr_mem_region;
 	struct icnss_mem_region_info
 		mem_region[WLFW_MAX_NUM_MEMORY_REGIONS];
+	struct icnss_dev_mem_info dev_mem_info[ICNSS_MAX_DEV_MEM_NUM];
 	struct dentry *root_dentry;
 	spinlock_t on_off_lock;
 	struct icnss_stats stats;
 	void *modem_notify_handler;
 	void *wpss_notify_handler;
 	void *wpss_early_notify_handler;
+	bool notif_crashed;
 	struct notifier_block modem_ssr_nb;
 	struct notifier_block wpss_ssr_nb;
 	struct notifier_block wpss_early_ssr_nb;
@@ -479,7 +536,6 @@ struct icnss_priv {
 	struct list_head icnss_tcdev_list;
 	struct mutex tcdev_lock;
 	bool is_chain1_supported;
-	bool chain_reg_info_updated;
 	u32 hw_trc_override;
 	struct icnss_dms_data dms;
 	u8 use_nv_mac;
@@ -492,6 +548,8 @@ struct icnss_priv {
 	struct qmp *qmp;
 #endif
 	bool use_direct_qmp;
+	const char **pdc_init_table;
+	int pdc_init_table_len;
 	u32 wlan_en_delay_ms;
 	u32 wlan_en_delay_ms_user;
 	struct class *icnss_ramdump_class;
@@ -513,7 +571,7 @@ struct icnss_priv {
 	u32 rf_subtype;
 	u8 is_slate_rfa;
 	struct completion slate_boot_complete;
-#ifdef SLATE_MODULE_ENABLED
+#ifdef CONFIG_SLATE_MODULE_ENABLED
 	struct seb_notif_info *seb_handle;
 	struct notifier_block seb_nb;
 #endif
@@ -524,6 +582,7 @@ struct icnss_priv {
 	enum icnss_phy_he_channel_width_cap phy_he_channel_width_cap;
 	enum icnss_phy_qam_cap phy_qam_cap;
 	bool rproc_fw_download;
+	struct wlchip_serial_id_v01 serial_id;
 };
 
 struct icnss_reg_info {
@@ -552,6 +611,8 @@ void icnss_add_fw_prefix_name(struct icnss_priv *priv, char *prefix_name,
 			      char *name);
 int icnss_aop_interface_init(struct icnss_priv *priv);
 void icnss_aop_interface_deinit(struct icnss_priv *priv);
+int icnss_aop_pdc_reconfig(struct icnss_priv *priv);
+void icnss_power_misc_params_init(struct icnss_priv *priv);
 void icnss_recovery_timeout_hdlr(struct timer_list *t);
 void icnss_wpss_ssr_timeout_hdlr(struct timer_list *t);
 #endif
